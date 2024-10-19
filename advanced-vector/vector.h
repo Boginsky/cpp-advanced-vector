@@ -21,16 +21,13 @@ public:
     RawMemory& operator=(const RawMemory& rhs) = delete;
 
     RawMemory(RawMemory&& other) noexcept {
-        buffer_ = other.buffer_;
-        capacity_ = other.capacity_;
+        Swap(other);
         other.buffer_ = nullptr;
         other.capacity_ = 0;
     }
 
     RawMemory& operator=(RawMemory&& rhs) noexcept {
         if (this != &rhs) {
-            Deallocate(buffer_);
-            capacity_ = 0;
             Swap(rhs);
         }
         return *this;
@@ -104,24 +101,18 @@ public:
         std::uninitialized_copy_n(other.data_.GetAddress(), size_, data_.GetAddress());
     }
 
-    Vector& operator=(const Vector& rhs) {
-        if (this != &rhs) {
-            if (rhs.size_ > data_.Capacity()) {
-                Vector rhs_copy(rhs);
-                Swap(rhs_copy);
-            } else {
-                if (rhs.size_ < size_) {
-                    std::copy(rhs.data_.GetAddress(), rhs.data_.GetAddress() + rhs.size_, data_.GetAddress());
-                    std::destroy_n(data_.GetAddress() + rhs.size_, size_ - rhs.size_);
-                } else {
-                    std::copy(rhs.data_.GetAddress(), rhs.data_.GetAddress() + size_, data_.GetAddress());
-                    std::uninitialized_copy_n(rhs.data_.GetAddress() + size_, rhs.size_ - size_, data_.GetAddress() + size_);
-                }
-                size_ = rhs.size_;
-            }
+Vector& operator=(const Vector& rhs) {
+    if (this != &rhs) {
+        if (rhs.size_ > data_.Capacity()) {
+            Vector rhs_copy(rhs);
+            Swap(rhs_copy);
+        } else {
+            handleAssignment(rhs);
         }
-        return *this;
+        size_ = rhs.size_;
     }
+    return *this;
+}
 
     Vector(Vector&& other) noexcept {
         Swap(other);
@@ -252,6 +243,7 @@ public:
 
     template <typename... Args>
     iterator Emplace(const_iterator pos, Args&&... args) {
+        assert(pos >= begin() && pos <= end());
         size_t offset = pos - cbegin();
 
         if (size_ == Capacity()) {
@@ -320,4 +312,16 @@ public:
 private:
     RawMemory<T> data_;
     size_t size_ = 0;
+    
+    void handleAssignment(const Vector& rhs) {
+        size_t min_size = std::min(size_, rhs.size_);
+    
+        std::copy(rhs.data_.GetAddress(), rhs.data_.GetAddress() + min_size, data_.GetAddress());
+    
+        if (rhs.size_ < size_) {
+            std::destroy_n(data_.GetAddress() + rhs.size_, size_ - rhs.size_);
+        } else {
+            std::uninitialized_copy_n(rhs.data_.GetAddress() + min_size, rhs.size_ - min_size, data_.GetAddress() + min_size);
+        }
+    }
 };
