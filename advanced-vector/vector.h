@@ -107,7 +107,7 @@ Vector& operator=(const Vector& rhs) {
             Vector rhs_copy(rhs);
             Swap(rhs_copy);
         } else {
-            handleAssignment(rhs);
+            HandleAssignment(rhs);
         }
         size_ = rhs.size_;
     }
@@ -313,7 +313,7 @@ private:
     RawMemory<T> data_;
     size_t size_ = 0;
     
-    void handleAssignment(const Vector& rhs) {
+    void HandleAssignment(const Vector& rhs) {
         size_t min_size = std::min(size_, rhs.size_);
     
         std::copy(rhs.data_.GetAddress(), rhs.data_.GetAddress() + min_size, data_.GetAddress());
